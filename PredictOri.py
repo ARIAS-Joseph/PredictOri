@@ -1,5 +1,5 @@
 __author__ = "Joseph ARIAS, Arthur BORGES"
-__copyright__ = "Copyright 2023, PredictOri"
+__copyright__ = "Copyright 2024, PredictOri"
 __license__ = "GPL"
 __maintainer__ = "Joseph ARIAS"
 __email__ = "joseph.arias@ens.uvsq.fr"
@@ -126,12 +126,29 @@ class Interface:
                         spacing=0.1 * self.page.width), ],
                 vertical_alignment=ft.MainAxisAlignment.CENTER,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER), )
+        elif view == "attente":
+            self.page.views.append(
+                ft.View(
+                    route="attente",
+                    controls=[
+                        ft.Column(
+                            controls=[
+                                ft.Text(
+                                    value="Analyse en cours...",
+                                    size=30,
+                                    weight=ft.FontWeight.BOLD),
+                            ],
+                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                            spacing=0.1 * self.page.width), ],
+                    vertical_alignment=ft.MainAxisAlignment.CENTER,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER), )
         self.page.go(view)
 
     def file_selected(self, e, file_picker: ft.Ref[ft.FilePicker]):
         """Fonction appelée lorsqu'un fichier est sélectionné."""
         if e.files is not None:
             file = file_picker.current.result.files[0].path
+            self.change_view("attente")
             self.analyze_genome(e, file)
             self.change_view("analyse")
 
