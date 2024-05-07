@@ -32,6 +32,7 @@ class Interface:
         """Fonction qui change la vue de l'interface."""
         file_picker = self.file_picker
         self.page.views.clear()
+        appbar=None
         scroll = None
         on_scroll_interval = None
         vertical_alignment = ft.MainAxisAlignment.CENTER
@@ -39,94 +40,103 @@ class Interface:
         if view == "analyse":
             scroll = ft.ScrollMode.HIDDEN
             on_scroll_interval = 0
-            controls = [ft.Column(
-                controls=[
-                    self.chart1,
-                    self.chart2,
-                ],
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=0.1 * self.page.width),]
+            controls = [
+                ft.Column(
+                    controls=[
+                        self.chart1,
+                        self.chart2,
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=0.1 * self.page.width),]
+            vertical_alignment = ft.MainAxisAlignment.CENTER
+            appbar = ft.AppBar(
+                actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT, on_click=lambda _: self.change_view("accueil"))])
         elif view == "explication":
-            controls = [ft.Column(
-                controls=[ft.Text(
-                    value="Qu'est-ce qu'une origine de réplication ?",
-                    size=30,
-                    weight=ft.FontWeight.BOLD),
+            controls = [ft.Row(
+                controls=[
                     ft.Text(
-                        value="L'origine de réplication est une séquence d'ADN à partir de laquelle la "
-                              "réplication de l'ADN commence. Elle est caractérisée par une région riche "
-                              "en AT et en séquences spécifiques qui permettent l'initiation de la "
-                              "réplication.",
-                        size=20),
-                    ft.FilledButton(
-                        text="Retour",
-                        on_click=lambda _: self.change_view("accueil")),],
-                horizontal_alignment = ft.CrossAxisAlignment.CENTER,
-                alignment = ft.MainAxisAlignment.CENTER,)]
+                        value="Qu'est-ce qu'une origine de réplication ?",
+                        size=30,
+                        weight=ft.FontWeight.BOLD)],
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+                    ft.Column(
+                        scroll=ft.ScrollMode.AUTO,
+                        controls=[
+                            ft.Text(
+                                value=open("./assets/text/explications_ori.txt", "r", encoding="UTF-8").read(),
+                                size=20, ), ],
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        alignment=ft.MainAxisAlignment.CENTER,
+                    )]
+            appbar = ft.AppBar(actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT, on_click=lambda _: self.change_view("accueil"))])
+            vertical_alignment = ft.MainAxisAlignment.CENTER
+            scroll = ft.ScrollMode.AUTO
+            on_scroll_interval = 0
         elif view == "aide":
             controls = [
-                        ft.Column(
-                            controls=[
-                                ft.Text(
-                                    value="Comment utiliser PredictOri ?",
-                                    size=30,
-                                    weight=ft.FontWeight.BOLD),
-                                ft.Text(
-                                    value="Pour utiliser PredictOri, il vous suffit de sélectionner le fichier FASTA "
-                                          "contenant le génome de la bactérie dont vous souhaitez prédire l'origine "
-                                          "de réplication.",
-                                    size=20),
-                                ft.FilledButton(
-                                    text="Retour",
-                                    on_click=lambda _: self.change_view("accueil"), ),
-                            ],
-                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                            spacing=0.1 * self.page.width), ]
-            vertical_alignment=ft.MainAxisAlignment.CENTER
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER
+                ft.Column(
+                    controls=[
+                        ft.Text(
+                            value="Comment utiliser PredictOri ?",
+                            size=30,
+                            weight=ft.FontWeight.BOLD),
+                        ft.Text(
+                            value="Pour utiliser PredictOri, il vous suffit de sélectionner le fichier FASTA "
+                                  "contenant le génome de la bactérie dont vous souhaitez prédire l'origine "
+                                  "de réplication.",
+                            size=20),
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=0.1 * self.page.width), ]
+            vertical_alignment = ft.MainAxisAlignment.CENTER
+            horizontal_alignment = ft.CrossAxisAlignment.CENTER
+            appbar = ft.AppBar(
+                actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT, on_click=lambda _: self.change_view("accueil"))])
         elif view == "accueil":
             controls = [ft.Column(
-                        controls=[
-                            ft.Text(
-                                value="Bienvenue sur PredictOri !",
-                                size=30,
-                                weight=ft.FontWeight.BOLD),
-                            ft.Text(
-                                value="Application pour prédire l'origine de réplication d'une bactérie à partir de son"
-                                      " génome.",
-                                size=20),
-                            ft.FilledButton(
-                                text="Commencer",
-                                on_click=lambda _: file_picker.current.pick_files(
-                                    dialog_title="Sélectionnez le fichier FASTA contenant le génome de la bactérie",
-                                    file_type=ft.FilePickerFileType.CUSTOM,
-                                    allowed_extensions=["fasta"],
-                                    allow_multiple=False), ),
-                            ft.FilledButton(
-                                text="Qu'est-ce qu'une origine de réplication ?",
-                                on_click=lambda _: self.change_view("explication"), ),
-                            ft.FilledButton(
-                                text="Comment utiliser PredictOri ?",
-                                on_click=lambda _: self.change_view("aide"), ),
-                        ],
-                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                        spacing=0.1 * self.page.width), ]
+                controls=[
+                    ft.Text(
+                        value="Bienvenue sur PredictOri !",
+                        size=30,
+                        weight=ft.FontWeight.BOLD),
+                    ft.Text(
+                        value="Application pour prédire l'origine de réplication d'une bactérie à partir de son"
+                              " génome.",
+                        size=20),
+                    ft.FilledButton(
+                        text="Commencer",
+                        on_click=lambda _: file_picker.current.pick_files(
+                            dialog_title="Sélectionnez le fichier FASTA contenant le génome de la bactérie",
+                            file_type=ft.FilePickerFileType.CUSTOM,
+                            allowed_extensions=["fasta"],
+                            allow_multiple=False), ),
+                    ft.FilledButton(
+                        text="Qu'est-ce qu'une origine de réplication ?",
+                        on_click=lambda _: self.change_view("explication"), ),
+                    ft.FilledButton(
+                        text="Comment utiliser PredictOri ?",
+                        on_click=lambda _: self.change_view("aide"), ),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=0.1 * self.page.width), ]
         elif view == "attente":
             controls = [ft.Column(
-                        controls=[
-                            ft.Text(
-                                value="Analyse en cours...",
-                                size=30,
-                                weight=ft.FontWeight.BOLD),
-                            ft.ProgressRing(ref=self.progress_ring),
-                        ],
-                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                        spacing=0.1 * self.page.width), ]
+                controls=[
+                    ft.Text(
+                        value="Analyse en cours...",
+                        size=30,
+                        weight=ft.FontWeight.BOLD),
+                    ft.ProgressRing(ref=self.progress_ring),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=0.1 * self.page.width), ]
             vertical_alignment = ft.MainAxisAlignment.CENTER
             horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
         self.page.views.append(ft.View(
             route=view,
+            appbar=appbar,
             controls=controls,
             horizontal_alignment=horizontal_alignment,
             vertical_alignment=vertical_alignment,
