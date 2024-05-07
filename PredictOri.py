@@ -21,6 +21,9 @@ class Interface:
         self.page = page  # Page principale de l'interface
         self.page.title = "PredictOri"  # Titre de la page
         self.page.window_maximized = True  # Maximise la fenêtre
+        self.window_ori = 0
+        self.ori_start = 0
+        self.ori_end = 0
         self.page.overlay.append(
             ft.FilePicker(on_result=lambda e: self.file_selected(e, self.file_picker), ref=self.file_picker))
         self.chart1 = MatplotlibChart()
@@ -32,8 +35,9 @@ class Interface:
         """Fonction qui change la vue de l'interface."""
         file_picker = self.file_picker
         self.page.views.clear()
-        appbar=None
+        appbar = None
         scroll = None
+        controls = []
         on_scroll_interval = None
         vertical_alignment = ft.MainAxisAlignment.CENTER
         horizontal_alignment = ft.CrossAxisAlignment.CENTER
@@ -44,13 +48,18 @@ class Interface:
                 ft.Column(
                     controls=[
                         self.chart1,
+                        ft.Text(f"L'origine de réplication se trouve entre les nucléotides {self.ori_start} "
+                                f"et {self.ori_end} dans la fenêtre {self.window_ori}.",
+                                size=20),
                         self.chart2,
                     ],
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    spacing=0.1 * self.page.width),]
+                    spacing=0.01 * self.page.width),]
             vertical_alignment = ft.MainAxisAlignment.CENTER
             appbar = ft.AppBar(
-                actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT, on_click=lambda _: self.change_view("accueil"))])
+                actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
+                                       on_click=lambda _: self.change_view("accueil"),
+                                       tooltip="Retour à l'accueil")])
         elif view == "explication":
             controls = [ft.Row(
                 controls=[
@@ -69,7 +78,9 @@ class Interface:
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         alignment=ft.MainAxisAlignment.CENTER,
                     )]
-            appbar = ft.AppBar(actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT, on_click=lambda _: self.change_view("accueil"))])
+            appbar = ft.AppBar(actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
+                                                      on_click=lambda _: self.change_view("accueil"),
+                                                      tooltip="Retour à l'accueil")])
             vertical_alignment = ft.MainAxisAlignment.CENTER
             scroll = ft.ScrollMode.AUTO
             on_scroll_interval = 0
@@ -92,7 +103,9 @@ class Interface:
             vertical_alignment = ft.MainAxisAlignment.CENTER
             horizontal_alignment = ft.CrossAxisAlignment.CENTER
             appbar = ft.AppBar(
-                actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT, on_click=lambda _: self.change_view("accueil"))])
+                actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
+                                       on_click=lambda _: self.change_view("accueil"),
+                                       tooltip="Retour à l'accueil")])
         elif view == "accueil":
             controls = [ft.Column(
                 controls=[
@@ -161,7 +174,6 @@ class Interface:
             genome = '\n'.join(lines.splitlines()[1:])
             i = 0
             ratio = []
-            print(self.progress_ring.current.value)
             self.progress_ring.current.value = 0
             self.page.update()
             while True:
@@ -187,9 +199,9 @@ class Interface:
             ax1.plot(ratio, linewidth=0.5)
             try:
                 invert_point = self.find_inversion_point(ratio)
-                print(
-                    f"Le point d'inversion se trouve entre les nucléotides {overlap * invert_point} et"
-                    f"{overlap * invert_point + len_window}.")
+                self.window_ori = invert_point
+                self.ori_start = overlap * invert_point
+                self.ori_end = overlap * invert_point + len_window
                 ax1.axhline(y=0, color='r', label='Fenêtre contenant le point d\'inversion')
                 ax1.scatter(invert_point, 0, color='red', zorder=5)
                 ax1.axvline(invert_point, linestyle='--', color='r', ymax=0.5)
