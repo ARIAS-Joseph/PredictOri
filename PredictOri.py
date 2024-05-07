@@ -17,6 +17,7 @@ class Interface:
     def __init__(self, page):
 
         self.file_picker = ft.Ref[ft.FilePicker]()
+        self.progress_ring = ft.Ref[ft.ProgressRing]()
         self.page = page  # Page principale de l'interface
         self.page.title = "PredictOri"  # Titre de la page
         self.page.window_maximized = True  # Maximise la fenêtre
@@ -31,51 +32,39 @@ class Interface:
         """Fonction qui change la vue de l'interface."""
         file_picker = self.file_picker
         self.page.views.clear()
+        scroll = None
+        on_scroll_interval = None
+        vertical_alignment = ft.MainAxisAlignment.CENTER
+        horizontal_alignment = ft.CrossAxisAlignment.CENTER
         if view == "analyse":
-            self.page.views.append(
-                ft.View(
-                    route="analyse",
-                    scroll=ft.ScrollMode.HIDDEN,
-                    on_scroll_interval=0,
-                    controls=[
-                        ft.Column(
-                            controls=[
-                                self.chart1,
-                                self.chart2,
-                            ],
-                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                            spacing=0.1 * self.page.width), ],
-                    vertical_alignment=ft.MainAxisAlignment.CENTER,
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER), )
+            scroll = ft.ScrollMode.HIDDEN
+            on_scroll_interval = 0
+            controls = [ft.Column(
+                controls=[
+                    self.chart1,
+                    self.chart2,
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=0.1 * self.page.width),]
         elif view == "explication":
-            self.page.views.append(
-                ft.View(
-                    route="explication",
-                    controls=[
-                        ft.Column(
-                            controls=[
-                                ft.Text(
-                                    value="Qu'est-ce qu'une origine de réplication ?",
-                                    size=30,
-                                    weight=ft.FontWeight.BOLD),
-                                ft.Text(
-                                    value="L'origine de réplication est une séquence d'ADN à partir de laquelle la réplication"
-                                          " de l'ADN commence. Elle est caractérisée par une région riche en AT et en séquences"
-                                          " spécifiques qui permettent l'initiation de la réplication.",
-                                    size=20),
-                                ft.FilledButton(
-                                    text="Retour",
-                                    on_click=lambda _: self.change_view("accueil"), ),
-                            ],
-                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                            spacing=0.1 * self.page.width), ],
-                    vertical_alignment=ft.MainAxisAlignment.CENTER,
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER), )
+            controls = [ft.Column(
+                controls=[ft.Text(
+                    value="Qu'est-ce qu'une origine de réplication ?",
+                    size=30,
+                    weight=ft.FontWeight.BOLD),
+                    ft.Text(
+                        value="L'origine de réplication est une séquence d'ADN à partir de laquelle la "
+                              "réplication de l'ADN commence. Elle est caractérisée par une région riche "
+                              "en AT et en séquences spécifiques qui permettent l'initiation de la "
+                              "réplication.",
+                        size=20),
+                    ft.FilledButton(
+                        text="Retour",
+                        on_click=lambda _: self.change_view("accueil")),],
+                horizontal_alignment = ft.CrossAxisAlignment.CENTER,
+                alignment = ft.MainAxisAlignment.CENTER,)]
         elif view == "aide":
-            self.page.views.append(
-                ft.View(
-                    route="aide",
-                    controls=[
+            controls = [
                         ft.Column(
                             controls=[
                                 ft.Text(
@@ -83,22 +72,20 @@ class Interface:
                                     size=30,
                                     weight=ft.FontWeight.BOLD),
                                 ft.Text(
-                                    value="Pour utiliser PredictOri, il vous suffit de sélectionner le fichier FASTA contenant"
-                                          " le génome de la bactérie dont vous souhaitez prédire l'origine de réplication.",
+                                    value="Pour utiliser PredictOri, il vous suffit de sélectionner le fichier FASTA "
+                                          "contenant le génome de la bactérie dont vous souhaitez prédire l'origine "
+                                          "de réplication.",
                                     size=20),
                                 ft.FilledButton(
                                     text="Retour",
                                     on_click=lambda _: self.change_view("accueil"), ),
                             ],
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                            spacing=0.1 * self.page.width), ],
-                    vertical_alignment=ft.MainAxisAlignment.CENTER,
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER), )
+                            spacing=0.1 * self.page.width), ]
+            vertical_alignment=ft.MainAxisAlignment.CENTER
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER
         elif view == "accueil":
-            self.page.views.append(ft.View(
-                route="accueil",
-                controls=[
-                    ft.Column(
+            controls = [ft.Column(
                         controls=[
                             ft.Text(
                                 value="Bienvenue sur PredictOri !",
@@ -123,25 +110,29 @@ class Interface:
                                 on_click=lambda _: self.change_view("aide"), ),
                         ],
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                        spacing=0.1 * self.page.width), ],
-                vertical_alignment=ft.MainAxisAlignment.CENTER,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER), )
+                        spacing=0.1 * self.page.width), ]
         elif view == "attente":
-            self.page.views.append(
-                ft.View(
-                    route="attente",
-                    controls=[
-                        ft.Column(
-                            controls=[
-                                ft.Text(
-                                    value="Analyse en cours...",
-                                    size=30,
-                                    weight=ft.FontWeight.BOLD),
-                            ],
-                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                            spacing=0.1 * self.page.width), ],
-                    vertical_alignment=ft.MainAxisAlignment.CENTER,
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER), )
+            controls = [ft.Column(
+                        controls=[
+                            ft.Text(
+                                value="Analyse en cours...",
+                                size=30,
+                                weight=ft.FontWeight.BOLD),
+                            ft.ProgressRing(ref=self.progress_ring),
+                        ],
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        spacing=0.1 * self.page.width), ]
+            vertical_alignment = ft.MainAxisAlignment.CENTER
+            horizontal_alignment = ft.CrossAxisAlignment.CENTER
+
+        self.page.views.append(ft.View(
+            route=view,
+            controls=controls,
+            horizontal_alignment=horizontal_alignment,
+            vertical_alignment=vertical_alignment,
+            scroll=scroll,
+            on_scroll_interval=on_scroll_interval,
+        ))
         self.page.go(view)
 
     def file_selected(self, e, file_picker: ft.Ref[ft.FilePicker]):
@@ -160,13 +151,16 @@ class Interface:
             genome = '\n'.join(lines.splitlines()[1:])
             i = 0
             ratio = []
+            print(self.progress_ring.current.value)
+            self.progress_ring.current.value = 0
+            self.page.update()
             while True:
                 end_window = min(i + len_window, len(genome))
                 window = genome[i:end_window]
-                nb_G = window.count('G')
-                nb_C = window.count('C')
+                nb_g = window.count('G')
+                nb_c = window.count('C')
                 try:
-                    ratio.append((nb_G - nb_C) / (nb_G + nb_C))
+                    ratio.append((nb_g - nb_c) / (nb_g + nb_c))
                 except ZeroDivisionError:
                     print(window)
                     print("Division by zero while calculating ratio, must choose a greater window size.")
@@ -174,13 +168,16 @@ class Interface:
                 if min(i + len_window, len(genome)) == len(genome):
                     break
                 i += overlap
+                self.progress_ring.current.value = i / len(genome)
+                self.page.update()
 
             fig1, ax1 = plt.subplots(figsize=(15, 6))
             ax1.plot(ratio, linewidth=0.5)
             try:
                 invert_point = self.find_inversion_point(ratio)
                 print(
-                    f"Le point d'inversion se trouve entre les nucléotides {overlap * invert_point} et {overlap * invert_point + len_window}.")
+                    f"Le point d'inversion se trouve entre les nucléotides {overlap * invert_point} et"
+                    f"{overlap * invert_point + len_window}.")
                 ax1.axhline(y=0, color='r', label='Fenêtre contenant le point d\'inversion')
                 ax1.scatter(invert_point, 0, color='red', zorder=5)
                 ax1.axvline(invert_point, linestyle='--', color='r', ymax=0.5)
@@ -197,42 +194,42 @@ class Interface:
             ax1.set_ylabel('Ratio (G-C) / (G+C)')
             self.chart1.figure = fig1
 
-            SeqLength = len(genome)
-            InitW = 0
+            seqlength = len(genome)
+            initw = 0
             x_values = [0]  # La position initiale
             y_values = [0]  # La position initiale
 
-            while InitW <= SeqLength:
-                nbA = nbC = nbG = nbT = 0
+            while initw <= seqlength:
+                nba = nbc = nbg = nbt = 0
                 nb = 0
-                for I in range(InitW, min(InitW + len_window, SeqLength)):
+                for i in range(initw, min(initw + len_window, seqlength)):
                     nb += 1
-                    base = genome[I]  # Python utilise des indices 0-based
+                    base = genome[i]  # Python utilise des indices 0-based
 
                     if base == 'A':
-                        nbA += 1
+                        nba += 1
                     elif base == 'C':
-                        nbC += 1
+                        nbc += 1
                     elif base == 'G':
-                        nbG += 1
+                        nbg += 1
                     elif base == 'T':
-                        nbT += 1
+                        nbt += 1
 
-                NbStepsRight = nbC - nbG
-                NbStepsUp = nbA - nbT
-                XEndSegment = NbStepsRight * nb
-                YEndSegment = NbStepsUp * nb
+                nb_steps_right = nbc - nbg
+                nb_steps_up = nba - nbt
+                x_end_segment = nb_steps_right * nb
+                y_end_segment = nb_steps_up * nb
 
-                x_values.append(x_values[-1] + XEndSegment)
-                y_values.append(y_values[-1] + YEndSegment)
+                x_values.append(x_values[-1] + x_end_segment)
+                y_values.append(y_values[-1] + y_end_segment)
 
-                InitW += len_window
+                initw += len_window
 
             fig2, ax2 = plt.subplots(figsize=(15, 6))
             try:
                 cusp = self.find_cusp(x_values, y_values)
                 ax2.annotate('Point de rebroussement', xy=(cusp[0], cusp[1]), xytext=(cusp[0], cusp[1]), color='red',
-                            ha='center', va='top')
+                             ha='center', va='top')
                 ax2.scatter(cusp[0], cusp[1], color='red', zorder=5)
             except Exception:
                 print("Pas de point de rebroussement trouvé.")
@@ -246,22 +243,22 @@ class Interface:
     @staticmethod
     def find_inversion_point(ratios):
         """Fonction qui trouve le point d'inversion dans une liste de ratios (G-C) / (G+C)."""
-        invert_point = -1
         if ratios[0] < 0:  # si le premier ratio est négatif
-            sens = 1  # alors on veut que le ratio soit positif
+            sens = 1  # on veut que le ratio soit positif
         else:  # sinon
             sens = -1  # on veut que le ratio soit négatif
         for i in range(1, len(ratios)):
-            nb_ratio_inversions = 0  # nombre de ratios qui respectent la condition d'être de signe opposé au ratio initial
+            nb_ratio_inversions = 0  # nombre de ratios qui respectent la condition d'être de signe opposé au ratio
+            # initial
             if sens == 1 and ratios[i] > 0:  # si on veut que le ratio soit positif et que le ratio est positif
-                for j in range(i+1, i+11):  # on regarde les 10 ratios suivants
+                for j in range(i + 1, i + 11):  # on regarde les 10 ratios suivants
                     if ratios[j] > 0:  # si le ratio est positif
-                        nb_ratio_inversions += 1 # on incrémente le nombre de ratios positifs
+                        nb_ratio_inversions += 1  # on incrémente le nombre de ratios positifs
                 if nb_ratio_inversions >= 8:  # si on a trouvé au moins 8 ratios positifs
                     invert_point = i  # on a trouvé le point d'inversion
                     return invert_point
             elif sens == -1 and ratios[i] < 0:  # si on veut que le ratio soit négatif et que le ratio est négatif
-                for j in range(i+1, i+11):  # on regarde les 10 ratios suivants
+                for j in range(i + 1, i + 11):  # on regarde les 10 ratios suivants
                     if ratios[j] < 0:  # si le ratio est négatif
                         nb_ratio_inversions += 1  # on incrémente le nombre de ratios négatifs
                 if nb_ratio_inversions >= 8:  # si on a trouvé au moins 8 ratios négatifs
@@ -271,10 +268,9 @@ class Interface:
 
     @staticmethod
     def find_cusp(x_values, y_values):
-        cusp = [-1, -1]
         for i in range(1, len(x_values)):
             count = 0
-            for j in range(i+1, i+11):
+            for j in range(i + 1, i + 11):
                 if x_values[i] > x_values[j] and y_values[i] >= y_values[j]:
                     count += 1
             if count >= 8:
