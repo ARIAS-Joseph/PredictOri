@@ -178,9 +178,11 @@ class Interface:
                 if min(i + len_window, len(genome)) == len(genome):
                     break
                 i += overlap
-                self.progress_ring.current.value = i / len(genome)
+                self.progress_ring.current.value = (i / len(genome)) / 2
                 self.page.update()
 
+            self.progress_ring.current.value = None
+            self.page.update()
             fig1, ax1 = plt.subplots(figsize=(15, 6))
             ax1.plot(ratio, linewidth=0.5)
             try:
@@ -209,6 +211,8 @@ class Interface:
             x_values = [0]  # La position initiale
             y_values = [0]  # La position initiale
 
+            self.progress_ring.current.value = 0.5
+            self.page.update()
             while initw <= seqlength:
                 nba = nbc = nbg = nbt = 0
                 nb = 0
@@ -234,7 +238,11 @@ class Interface:
                 y_values.append(y_values[-1] + y_end_segment)
 
                 initw += len_window
+                self.progress_ring.current.value = 0.5 + (initw / seqlength) / 2
+                self.page.update()
 
+            self.progress_ring.current.value = None
+            self.page.update()
             fig2, ax2 = plt.subplots(figsize=(15, 6))
             try:
                 cusp = self.find_cusp(x_values, y_values)
