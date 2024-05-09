@@ -9,6 +9,7 @@ import flet as ft
 import sys
 import matplotlib.pyplot as plt
 from flet.matplotlib_chart import MatplotlibChart
+import regex as re
 
 
 # PARTIE INTERFACE GRAPHIQUE
@@ -34,7 +35,7 @@ class Interface:
 
         self.change_view("accueil")
 
-    def change_view(self, view: str):
+    def change_view(self, view: str, err_mess : str = None):
         """Fonction qui change la vue de l'interface."""
         file_picker = self.file_picker
         self.page.views.clear()
@@ -82,7 +83,9 @@ class Interface:
                 )]
             appbar = ft.AppBar(leading=ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
                                                      on_click=lambda _: self.change_view("accueil"),
-                                                     tooltip="Retour à l'accueil"))
+                                                     tooltip="Retour à l'accueil"),
+                               title=ft.Text("Qu'est ce que l'origine de réplication ?", size=20),
+                               title_spacing=0.0)
             vertical_alignment = ft.MainAxisAlignment.CENTER
             scroll = ft.ScrollMode.AUTO
             on_scroll_interval = 0
@@ -147,6 +150,25 @@ class Interface:
                 spacing=0.1 * self.page.width), ]
             vertical_alignment = ft.MainAxisAlignment.CENTER
             horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        elif view == "erreur":
+            controls = [ft.Column(
+                controls=[
+                    ft.Text(
+                        value="Erreur",
+                        size=30,
+                        weight=ft.FontWeight.BOLD,
+                        color=ft.colors.RED),
+                    ft.Text(
+                        value=err_mess,
+                        size=20),
+                    ft.FilledButton(
+                        text="Revenir à l'accueil",
+                        on_click=lambda _: self.change_view("accueil"), ),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=0.1 * self.page.width), ]
+            vertical_alignment = ft.MainAxisAlignment.CENTER
+            horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
         self.page.views.append(ft.View(
             route=view,
@@ -165,7 +187,8 @@ class Interface:
             file = file_picker.current.result.files[0].path
             self.change_view("attente")
             self.analyze_genome(e, file)
-            self.change_view("analyse")
+            if self.page.current.route != "erreur":
+                self.change_view("analyse")
 
     # PARTIE BIOLOGIE
 
@@ -174,7 +197,15 @@ class Interface:
         if e.files is not None:
             with open(file, 'r') as f:
                 lines = f.read()
-            genome = '\n'.join(lines.splitlines()[1:])
+            genome = '\n'.join(lines.splitlines()[1:]).upper()
+            non_adn = re.compile(r'[^ATCGU]')
+            cherche_non_nucl = non_adn.search(genome)
+            if cherche_non_nucl:
+                self.change_view("erreur", "Le fichier FASTA contient des caractères non nucléotidiques.")
+                return
+            if "U" in genome:
+                self.change_view("erreur", "Le fichier FASTA est une séquence d'ARN. Une séquence d'ADN est requise.")
+                return
             i = 0
             ratio = []
             self.progress_ring.current.value = 0
@@ -187,7 +218,10 @@ class Interface:
                 try:
                     ratio.append((nb_g - nb_c) / (nb_g + nb_c))
                 except ZeroDivisionError:
-                    sys.exit()
+                    self.change_view("erreur", "Division par zéro. Vérifiez que le fichier FASTA contient des G et C. "
+                                               "Si c'est le cas, veuillez modifier la taille de la fenêtre ou du "
+                                               "chevauchement.")
+                    return
                 if min(i + len_window, len(genome)) == len(genome):
                     break
                 i += overlap
@@ -210,7 +244,8 @@ class Interface:
                              xytext=(invert_point, -0.25),
                              color='red', ha='center', va='top')
             except Exception:
-                print("Point d'inversion non trouvé.")
+                self.change_view("erreur", "Point d'inversion non trouvé.")
+                return
 
             val_max_y = max(abs(min(ratio)), abs(max(ratio)))
             ax1.set_ylim(-val_max_y, val_max_y)
@@ -263,7 +298,8 @@ class Interface:
                              ha='center', va='top')
                 ax2.scatter(cusp[0], cusp[1], color='red', zorder=5)
             except Exception:
-                print("Pas de point de rebroussement trouvé.")
+                self.change_view("erreur", "Point de rebroussement non trouvé.")
+                return
             ax2.plot(x_values, y_values, linestyle='-')
             ax2.set_xlabel('Horizontal Direction')
             ax2.set_ylabel('Vertical Direction')
