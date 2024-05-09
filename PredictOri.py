@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 from flet.matplotlib_chart import MatplotlibChart
 
 
+# PARTIE INTERFACE GRAPHIQUE
+
+
 class Interface:
     """Classe principale de l'interface."""
 
@@ -54,12 +57,11 @@ class Interface:
                         self.chart2,
                     ],
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    spacing=0.01 * self.page.width),]
+                    spacing=0.01 * self.page.width), ]
             vertical_alignment = ft.MainAxisAlignment.CENTER
-            appbar = ft.AppBar(
-                actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
-                                       on_click=lambda _: self.change_view("accueil"),
-                                       tooltip="Retour à l'accueil")])
+            appbar = ft.AppBar(leading=ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
+                                                     on_click=lambda _: self.change_view("accueil"),
+                                                     tooltip="Retour à l'accueil"))
         elif view == "explication":
             controls = [ft.Row(
                 controls=[
@@ -69,18 +71,18 @@ class Interface:
                         weight=ft.FontWeight.BOLD)],
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
-                    ft.Column(
-                        scroll=ft.ScrollMode.AUTO,
-                        controls=[
-                            ft.Text(
-                                value=open("./assets/text/explications_ori.txt", "r", encoding="UTF-8").read(),
-                                size=20, ), ],
-                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                        alignment=ft.MainAxisAlignment.CENTER,
-                    )]
-            appbar = ft.AppBar(actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
-                                                      on_click=lambda _: self.change_view("accueil"),
-                                                      tooltip="Retour à l'accueil")])
+                ft.Column(
+                    scroll=ft.ScrollMode.AUTO,
+                    controls=[
+                        ft.Text(
+                            value=open("./assets/text/explications_ori.txt", "r", encoding="UTF-8").read(),
+                            size=20, ), ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                )]
+            appbar = ft.AppBar(leading=ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
+                                                     on_click=lambda _: self.change_view("accueil"),
+                                                     tooltip="Retour à l'accueil"))
             vertical_alignment = ft.MainAxisAlignment.CENTER
             scroll = ft.ScrollMode.AUTO
             on_scroll_interval = 0
@@ -102,10 +104,9 @@ class Interface:
                     spacing=0.1 * self.page.width), ]
             vertical_alignment = ft.MainAxisAlignment.CENTER
             horizontal_alignment = ft.CrossAxisAlignment.CENTER
-            appbar = ft.AppBar(
-                actions=[ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
-                                       on_click=lambda _: self.change_view("accueil"),
-                                       tooltip="Retour à l'accueil")])
+            appbar = ft.AppBar(leading=ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
+                                                     on_click=lambda _: self.change_view("accueil"),
+                                                     tooltip="Retour à l'accueil"))
         elif view == "accueil":
             controls = [ft.Column(
                 controls=[
@@ -166,6 +167,8 @@ class Interface:
             self.analyze_genome(e, file)
             self.change_view("analyse")
 
+    # PARTIE BIOLOGIE
+
     def analyze_genome(self, e, file, len_window=10_000, overlap=9_000):
         """Fonction qui analyse le génome pour déterminer l'origine de réplication."""
         if e.files is not None:
@@ -184,8 +187,6 @@ class Interface:
                 try:
                     ratio.append((nb_g - nb_c) / (nb_g + nb_c))
                 except ZeroDivisionError:
-                    print(window)
-                    print("Division by zero while calculating ratio, must choose a greater window size.")
                     sys.exit()
                 if min(i + len_window, len(genome)) == len(genome):
                     break
