@@ -34,7 +34,7 @@ class Interface:
 
         self.change_view("accueil")
 
-    def change_view(self, view: str, err_mess : str = None):
+    def change_view(self, view: str, err_mess: str = None, add_button: bool = False):
         """Fonction qui change la vue de l'interface."""
         file_picker = self.file_picker
         self.page.views.clear()
@@ -150,6 +150,12 @@ class Interface:
             vertical_alignment = ft.MainAxisAlignment.CENTER
             horizontal_alignment = ft.CrossAxisAlignment.CENTER
         elif view == "erreur":
+            if add_button:
+                button = ft.FilledButton(
+                    text="Voir les résultats malgré tout",
+                    on_click=lambda _: self.change_view("analyse"), )
+            else:
+                button = None
             controls = [ft.Column(
                 controls=[
                     ft.Text(
@@ -163,6 +169,7 @@ class Interface:
                     ft.FilledButton(
                         text="Revenir à l'accueil",
                         on_click=lambda _: self.change_view("accueil"), ),
+                    button,
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=0.1 * self.page.width), ]
@@ -232,8 +239,17 @@ class Interface:
             self.page.update()
             fig1, ax1 = plt.subplots(figsize=(15, 6))
             ax1.plot(ratio, linewidth=0.5)
-            try:
-                invert_point = self.find_inversion_point(ratio)
+            invert_point = self.find_inversion_point(ratio)
+            if len(invert_point) > 1:
+                self.change_view("erreur", "Plusieurs points d'inversion trouvés. Veuillez modifier la taille "
+                                           "de la fenêtre ou du chevauchement. Si le problème persiste, "
+                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.", True)
+            elif len(invert_point) == 0:
+                self.change_view("erreur", "Aucun point d'inversion trouvé. Veuillez modifier la taille de la fenêtre "
+                                           "ou du chevauchement. Si le problème persiste, le point d'inversion ne peut "
+                                           "être trouvé par l'algorithme utilisé.", False)
+
+            for invert_point in self.find_inversion_point(ratio):
                 self.window_ori = invert_point
                 self.ori_start = overlap * invert_point
                 self.ori_end = overlap * invert_point + len_window
@@ -243,8 +259,6 @@ class Interface:
                 ax1.annotate(f'Fenêtre du point d\'inversion: {invert_point}', xy=(invert_point, 0),
                              xytext=(invert_point, -0.25),
                              color='red', ha='center', va='top')
-            except Exception:
-                return
 
             val_max_y = max(abs(min(ratio)), abs(max(ratio)))
             ax1.set_ylim(-val_max_y, val_max_y)
@@ -291,13 +305,20 @@ class Interface:
             self.progress_ring.current.value = None
             self.page.update()
             fig2, ax2 = plt.subplots(figsize=(15, 6))
-            try:
-                cusp = self.find_cusp(x_values, y_values)
+            cusps = self.find_cusp(x_values, y_values)
+            print(cusps)
+            if len(cusps) == 0:
+                self.change_view("erreur", "Aucun point d'inversion trouvé. Veuillez modifier la taille "
+                                           "de la fenêtre ou du chevauchement. Si le problème persiste, "
+                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.", False)
+            elif len(cusps) > 1:
+                self.change_view("erreur", "Plusieurs points d'inversions trouvés. Veuillez modifier la taille "
+                                           "de la fenêtre ou du chevauchement. Si le problème persiste, "
+                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.", True)
+            for cusp in cusps:
                 ax2.annotate('Point de rebroussement', xy=(cusp[0], cusp[1]), xytext=(cusp[0], cusp[1]), color='red',
                              ha='center', va='top')
                 ax2.scatter(cusp[0], cusp[1], color='red', zorder=5)
-            except Exception:
-                return
             ax2.plot(x_values, y_values, linestyle='-')
             ax2.set_xlabel('Horizontal Direction')
             ax2.set_ylabel('Vertical Direction')
@@ -305,9 +326,10 @@ class Interface:
             ax2.grid()
             self.chart2.figure = fig2
 
-    def find_inversion_point(self, ratios):
+    @staticmethod
+    def find_inversion_point(ratios):
         """Fonction qui trouve le point d'inversion dans une liste de ratios (G-C) / (G+C)."""
-        invert_point_found = False
+        invert_point = []
         if ratios[0] < 0:  # si le premier ratio est négatif
             sens = 1  # on veut que le ratio soit positif
         else:  # sinon
@@ -316,58 +338,38 @@ class Interface:
             nb_ratio_inversions = 0  # nombre de ratios qui respectent la condition d'être de signe opposé au ratio
             # initial
             if sens == 1 and ratios[i] > 0:  # si on veut que le ratio soit positif et que le ratio est positif
-                for j in range(i + 1, i + 11):  # on regarde les 10 ratios suivants
+                for j in range(i + 1, min(i + 11, len(ratios))):  # on regarde les 10 ratios suivants
                     if ratios[j] > 0:  # si le ratio est positif
                         nb_ratio_inversions += 1  # on incrémente le nombre de ratios positifs
                 if nb_ratio_inversions >= 8:  # si on a trouvé au moins 8 ratios positifs
-                    if invert_point_found:
-                        invert_point = i  # on a trouvé le point d'inversion
-                        sens = -1  # on veut que le ratio soit négatif
-                        invert_point_found = True
-                    else:
-                        self.change_view("erreur", "Plusieurs points d'inversion trouvés. Veuillez modifier la taille "
-                                                   "de la fenêtre ou du chevauchement. Si le problème persiste, "
-                                                   "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
+                    invert_point.append(i)  # on a trouvé le point d'inversion
+                    sens = -1  # on veut que le ratio soit négatif
 
             elif sens == -1 and ratios[i] < 0:  # si on veut que le ratio soit négatif et que le ratio est négatif
-                for j in range(i + 1, i + 11):  # on regarde les 10 ratios suivants
+                for j in range(i + 1, min(i + 11, len(ratios))):  # on regarde les 10 ratios suivants
                     if ratios[j] < 0:  # si le ratio est négatif
                         nb_ratio_inversions += 1  # on incrémente le nombre de ratios négatifs
                 if nb_ratio_inversions >= 8:  # si on a trouvé au moins 8 ratios négatifs
-                    if invert_point_found:
-                        invert_point = i  # on a trouvé le point d'inversion
-                        sens = 1
-                        invert_point_found = True
-                    else:
-                        self.change_view("erreur", "Plusieurs points d'inversion trouvés. Veuillez modifier la taille "
-                                                   "de la fenêtre ou du chevauchement. Si le problème persiste, "
-                                                   "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
-        if invert_point_found:
-            return invert_point
-        raise Exception("Point d'inversion non trouvé")  # si on n'a pas trouvé de point d'inversion
+                    invert_point.append(i)  # on a trouvé le point d'inversion
+                    sens = 1  # on veut que le ratio soit positif
+        return invert_point
 
-    def find_cusp(self, x_values, y_values):
+    @staticmethod
+    def find_cusp( x_values, y_values):
         """Fonction qui trouve le point de rebroussement dans une liste de coordonnées."""
-        cusp_found = False
+        cusp = []
         for i in range(1, len(x_values)):
             count = 0
-            for j in range(i + 1, i + 11):
-                if cusp_found:
+            for j in range(i + 1, min(i + 11, len(x_values))):
+                if len(cusp) % 2 == 1:
                     if x_values[i] < x_values[j] and y_values[i] <= y_values[j]:
                         count += 1
                 else:
                     if x_values[i] > x_values[j] and y_values[i] >= y_values[j]:
                         count += 1
             if count == 10:
-                cusp = [x_values[i], y_values[i]]
-                if cusp_found:
-                    self.change_view("erreur", "Plusieurs points d'inversion trouvés. Veuillez modifier la taille "
-                                               "de la fenêtre ou du chevauchement. Si le problème persiste, "
-                                               "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
-                cusp_found = True
-        if cusp_found:
-            return cusp
-        raise Exception("Cusp not found")
+                cusp.append((x_values[i], y_values[i]))
+        return cusp
 
 
 ft.app(Interface)
