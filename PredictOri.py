@@ -155,7 +155,7 @@ class Interface:
                     text="Voir les résultats malgré tout",
                     on_click=lambda _: self.change_view("analyse"), )
             else:
-                button = None
+                button = ft.Text()
             controls = [ft.Column(
                 controls=[
                     ft.Text(
@@ -198,17 +198,21 @@ class Interface:
 
     # PARTIE BIOLOGIE
 
-    def analyze_genome(self, e, file, len_window=10_000, overlap=9_000):
+    def analyze_genome(self, e, file):
         """Fonction qui analyse le génome pour déterminer l'origine de réplication."""
         if e.files is not None:
             with open(file, 'r') as f:
                 lines = f.read().strip()
             genome = "".join(lines.splitlines()[1:]).upper()
+            len_window = len(genome) // 175  # on crée 175 fenêtres
+            overlap = (len_window // 10) * 9  # on chevauche les fenêtres de 90%
             non_adn = re.compile(r'[^ATCGU]')
             cherche_non_nucl = non_adn.search(genome)
-            print(cherche_non_nucl)
             if cherche_non_nucl:
-                self.change_view("erreur", "Le fichier FASTA contient des caractères non nucléotidiques.")
+                print(cherche_non_nucl)
+                self.change_view("erreur", "Le fichier FASTA contient des caractères non nucléotidiques"
+                                           f" (le premier est {genome[cherche_non_nucl.span()[0]]} au nucléotide "
+                                           f"{cherche_non_nucl.span()[0]}).")
                 return
             elif "U" in genome:
                 self.change_view("erreur", "Le fichier FASTA est une séquence d'ARN. Une séquence d'ADN est requise.")
@@ -306,7 +310,6 @@ class Interface:
             self.page.update()
             fig2, ax2 = plt.subplots(figsize=(15, 6))
             cusps = self.find_cusp(x_values, y_values)
-            print(cusps)
             if len(cusps) == 0:
                 self.change_view("erreur", "Aucun point d'inversion trouvé. Veuillez modifier la taille "
                                            "de la fenêtre ou du chevauchement. Si le problème persiste, "
@@ -362,10 +365,10 @@ class Interface:
             count = 0
             for j in range(i + 1, min(i + 11, len(x_values))):
                 if len(cusp) % 2 == 1:
-                    if x_values[i] < x_values[j] and y_values[i] <= y_values[j]:
+                    if x_values[i] < x_values[j] and y_values[i] < y_values[j]:
                         count += 1
                 else:
-                    if x_values[i] > x_values[j] and y_values[i] >= y_values[j]:
+                    if x_values[i] > x_values[j] and y_values[i] > y_values[j]:
                         count += 1
             if count == 10:
                 cusp.append((x_values[i], y_values[i]))
