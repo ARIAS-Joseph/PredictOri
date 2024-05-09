@@ -9,6 +9,7 @@ import flet as ft
 import matplotlib.pyplot as plt
 from flet.matplotlib_chart import MatplotlibChart
 import regex as re
+import threading
 
 
 # PARTIE INTERFACE GRAPHIQUE
@@ -31,6 +32,7 @@ class Interface:
             ft.FilePicker(on_result=lambda e: self.file_selected(e, self.file_picker), ref=self.file_picker))
         self.chart1 = MatplotlibChart()
         self.chart2 = MatplotlibChart()
+        self.wait_graph = threading.Condition()
 
         self.change_view("accueil")
 
@@ -189,7 +191,11 @@ class Interface:
         if e.files is not None:
             file = file_picker.current.result.files[0].path
             self.change_view("attente")
-            self.analyze_genome(e, file)
+            thread = threading.Thread(target=self.analyze_genome, args=(e, file))
+            thread.start()
+            with self.wait_graph:
+                self.wait_graph.wait()
+                thread.join()
             if self.page.views[-1].route != "erreur":
                 self.change_view("analyse")
 
@@ -206,7 +212,6 @@ class Interface:
             non_adn = re.compile(r'[^ATCGU]')
             cherche_non_nucl = non_adn.search(genome)
             if cherche_non_nucl:
-                print(cherche_non_nucl)
                 self.change_view("erreur", "Le fichier FASTA contient des caractères non nucléotidiques"
                                            f" (le premier est {genome[cherche_non_nucl.span()[0]]} au nucléotide "
                                            f"{cherche_non_nucl.span()[0]}).")
@@ -325,6 +330,8 @@ class Interface:
             ax2.set_title('DNA Sequence Graph')
             ax2.grid()
             self.chart2.figure = fig2
+            with self.wait_graph:
+                self.wait_graph.notify()
 
     @staticmethod
     def find_inversion_point(ratios):
