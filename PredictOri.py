@@ -34,7 +34,7 @@ class Interface:
 
         self.change_view("accueil")
 
-    def change_view(self, view: str, err_mess: str = None, add_button: bool = False):
+    def change_view(self, view: str, err_mess: str = None):
         """Fonction qui change la vue de l'interface."""
         file_picker = self.file_picker
         self.page.views.clear()
@@ -150,12 +150,9 @@ class Interface:
             vertical_alignment = ft.MainAxisAlignment.CENTER
             horizontal_alignment = ft.CrossAxisAlignment.CENTER
         elif view == "erreur":
-            if add_button:
-                button = ft.FilledButton(
-                    text="Voir les résultats malgré tout",
-                    on_click=lambda _: self.change_view("analyse"), )
-            else:
-                button = ft.Text()
+            button = ft.FilledButton(
+                text="Voir les résultats malgré tout",
+                on_click=lambda _: self.change_view("analyse"), )
             controls = [ft.Column(
                 controls=[
                     ft.Text(
@@ -247,11 +244,11 @@ class Interface:
             if len(invert_point) > 1:
                 self.change_view("erreur", "Plusieurs points d'inversion trouvés. Veuillez modifier la taille "
                                            "de la fenêtre ou du chevauchement. Si le problème persiste, "
-                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.", True)
+                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
             elif len(invert_point) == 0:
                 self.change_view("erreur", "Aucun point d'inversion trouvé. Veuillez modifier la taille de la fenêtre "
                                            "ou du chevauchement. Si le problème persiste, le point d'inversion ne peut "
-                                           "être trouvé par l'algorithme utilisé.", False)
+                                           "être trouvé par l'algorithme utilisé.", )
 
             for invert_point in self.find_inversion_point(ratio):
                 self.window_ori = invert_point
@@ -313,11 +310,11 @@ class Interface:
             if len(cusps) == 0:
                 self.change_view("erreur", "Aucun point d'inversion trouvé. Veuillez modifier la taille "
                                            "de la fenêtre ou du chevauchement. Si le problème persiste, "
-                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.", False)
+                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
             elif len(cusps) > 1:
                 self.change_view("erreur", "Plusieurs points d'inversions trouvés. Veuillez modifier la taille "
                                            "de la fenêtre ou du chevauchement. Si le problème persiste, "
-                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.", True)
+                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
             for cusp in cusps:
                 ax2.annotate('Point de rebroussement', xy=(cusp[0], cusp[1]), xytext=(cusp[0], cusp[1]), color='red',
                              ha='center', va='top')
@@ -361,17 +358,39 @@ class Interface:
     def find_cusp( x_values, y_values):
         """Fonction qui trouve le point de rebroussement dans une liste de coordonnées."""
         cusp = []
+        if x_values[100] < 0 and y_values[100] < 0:
+            direction = "sud-ouest"
+        elif x_values[100] < 0 < y_values[100]:
+            direction = "nord-ouest"
+        elif x_values[100] > 0 > y_values[100]:
+            direction = "sud-est"
+        else:
+            direction = "nord-est"
         for i in range(1, len(x_values)):
             count = 0
             for j in range(i + 1, min(i + 11, len(x_values))):
-                if len(cusp) % 2 == 1:
+                if direction == "sud-ouest":
                     if x_values[i] < x_values[j] and y_values[i] < y_values[j]:
+                        count += 1
+                elif direction == "nord-ouest":
+                    if x_values[i] < x_values[j] and y_values[i] > y_values[j]:
+                        count += 1
+                elif direction == "sud-est":
+                    if x_values[i] > x_values[j] and y_values[i] < y_values[j]:
                         count += 1
                 else:
                     if x_values[i] > x_values[j] and y_values[i] > y_values[j]:
                         count += 1
             if count == 10:
                 cusp.append((x_values[i], y_values[i]))
+                if direction == "sud-ouest":
+                    direction = "nord-est"
+                elif direction == "nord-est":
+                    direction = "sud-ouest"
+                elif direction == "sud-est":
+                    direction = "nord-ouest"
+                else:
+                    direction = "sud-est"
         return cusp
 
 
