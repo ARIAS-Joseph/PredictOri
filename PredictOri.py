@@ -6,7 +6,6 @@ __email__ = "joseph.arias@ens.uvsq.fr"
 __status__ = "Released"
 
 import flet as ft
-import sys
 import matplotlib.pyplot as plt
 from flet.matplotlib_chart import MatplotlibChart
 import regex as re
@@ -187,7 +186,7 @@ class Interface:
             file = file_picker.current.result.files[0].path
             self.change_view("attente")
             self.analyze_genome(e, file)
-            if self.page.current.route != "erreur":
+            if self.page.views[-1].route != "erreur":
                 self.change_view("analyse")
 
     # PARTIE BIOLOGIE
@@ -196,14 +195,15 @@ class Interface:
         """Fonction qui analyse le génome pour déterminer l'origine de réplication."""
         if e.files is not None:
             with open(file, 'r') as f:
-                lines = f.read()
-            genome = '\n'.join(lines.splitlines()[1:]).upper()
+                lines = f.read().strip()
+            genome = "".join(lines.splitlines()[1:]).upper()
             non_adn = re.compile(r'[^ATCGU]')
             cherche_non_nucl = non_adn.search(genome)
+            print(cherche_non_nucl)
             if cherche_non_nucl:
                 self.change_view("erreur", "Le fichier FASTA contient des caractères non nucléotidiques.")
                 return
-            if "U" in genome:
+            elif "U" in genome:
                 self.change_view("erreur", "Le fichier FASTA est une séquence d'ARN. Une séquence d'ADN est requise.")
                 return
             i = 0
@@ -340,7 +340,7 @@ class Interface:
             for j in range(i + 1, i + 11):
                 if x_values[i] > x_values[j] and y_values[i] >= y_values[j]:
                     count += 1
-            if count >= 8:
+            if count == 10:
                 cusp = [x_values[i], y_values[i]]
                 return cusp
         raise Exception("Cusp not found")
