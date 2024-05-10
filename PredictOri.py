@@ -16,50 +16,53 @@ import threading
 
 
 class Interface:
-    """Classe principale de l'interface."""
+    """Classe de l'interface."""
 
     def __init__(self, page):
 
         self.file_picker = ft.Ref[ft.FilePicker]()  # Sélecteur de fichier
-        self.progress_ring = ft.Ref[ft.ProgressRing]()  # Anneau de progression
-        self.page = page  # Page principale de l'interface
+        self.progress_ring = ft.Ref[ft.ProgressRing]()  # Anneau de progression pour visualiser le temps d'attente
+        # restant
+        self.page = page  # Page de l'interface qui contiendra les différentes fenêtres (views)
         self.page.title = "PredictOri"  # Titre de la page
         self.page.window_maximized = True  # Maximise la fenêtre
-        self.window_ori = 0
-        self.ori_start = 0
-        self.ori_end = 0
-        # Ajout du sélecteur de fichier à la page
+        self.window_ori = 0  # Fenêtre contenant le point d'inversion
+        self.ori_start = 0  # Nucléotide du début de la fenêtre contenant l'origine de réplication
+        self.ori_end = 0  # Nucléotide de la fin de la fenêtre contenant de l'origine de réplication
+        # Ajout du sélecteur de fichier
         self.page.overlay.append(
             ft.FilePicker(on_result=lambda e: self.file_selected(e, self.file_picker), ref=self.file_picker))
-        self.chart1 = MatplotlibChart()  # Graphique 1
-        self.chart2 = MatplotlibChart()  # Graphique 2
-        self.wait_graph = threading.Condition()
+        self.chart1 = MatplotlibChart()  # Graphique pour afficher le ratio (G-C) / (G+C) en fonction de la fenêtre
+        self.chart2 = MatplotlibChart()  # Graphique pour afficher le chemin de la séquence d'ADN
+        self.wait_graph = threading.Condition()  # Condition pour attendre la fin de la création des graphiques
 
-        # Création de la vue d'accueil
-        self.change_view("accueil")
+        self.change_view("accueil")  # On affiche la vue d'accueil
 
     def change_view(self, view: str, err_mess: str = None):
         """Fonction qui change la vue de l'interface."""
         file_picker = self.file_picker
-        self.page.views.clear()
-        appbar = None
-        scroll = None
-        controls = []
-        on_scroll_interval = None
-        vertical_alignment = ft.MainAxisAlignment.CENTER
-        horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        self.page.views.clear()  # On supprime les vues précédentes
+        appbar = None  # Barre d'application qui apparait en haut de la page
+        scroll = None  # Mode de défilement
+        controls = []  # Contrôles de la page
+        on_scroll_interval = None  # Intervalle de défilement
+        vertical_alignment = ft.MainAxisAlignment.CENTER  # Alignement vertical
+        horizontal_alignment = ft.CrossAxisAlignment.CENTER  # Alignement horizontal
         # Vérification de la vue à afficher
-        if view == "analyse":
-            scroll = ft.ScrollMode.HIDDEN
+        if view == "analyse":  # Vue d'analyse
+            scroll = ft.ScrollMode.HIDDEN  # On cache la barre de défilement
             on_scroll_interval = 0
             controls = [
                 ft.Column(
                     controls=[
+                        # On affiche le graphique du ratio (G-C) / (G+C) en fonction de la fenêtre
                         self.chart1,
+                        # On affiche où se trouve l'origine de réplication
                         ft.Text(f"L'origine de réplication se trouve entre les nucléotides "
                                 f"{format(self.ori_start, ',')} "
                                 f"et {format(self.ori_end,',')} dans la fenêtre {self.window_ori}.",
                                 size=20),
+                        # On affiche le graphique du chemin de la séquence d'ADN
                         self.chart2,
                     ],
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -68,7 +71,7 @@ class Interface:
             appbar = ft.AppBar(leading=ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
                                                      on_click=lambda _: self.change_view("accueil"),
                                                      tooltip="Retour à l'accueil"))
-        elif view == "explication":
+        elif view == "explication":  # Vue d'explication
             controls = [ft.Row(
                 controls=[
                     ft.Text(
@@ -77,6 +80,7 @@ class Interface:
                         weight=ft.FontWeight.BOLD)],
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
+                # On affiche le texte d'explication qui est contenu dans le fichier explications_ori.txt
                 ft.Column(
                     scroll=ft.ScrollMode.AUTO,
                     controls=[
@@ -126,6 +130,7 @@ class Interface:
                         value="Application pour prédire l'origine de réplication d'une bactérie à partir de son"
                               " génome.",
                         size=20),
+                    # Bouton pour commencer l'analyse et qui permet la sélection du fichier FASTA
                     ft.FilledButton(
                         text="Commencer",
                         on_click=lambda _: file_picker.current.pick_files(
@@ -142,7 +147,7 @@ class Interface:
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=0.1 * self.page.width), ]
-        elif view == "attente":
+        elif view == "attente":  # Vue d'attente
             controls = [ft.Column(
                 controls=[
                     ft.Text(
@@ -155,7 +160,7 @@ class Interface:
                 spacing=0.1 * self.page.width), ]
             vertical_alignment = ft.MainAxisAlignment.CENTER
             horizontal_alignment = ft.CrossAxisAlignment.CENTER
-        elif view == "erreur":
+        elif view == "erreur":  # Vue d'erreur
             button = ft.FilledButton(
                 text="Voir les résultats malgré tout",
                 on_click=lambda _: self.change_view("analyse"), )
@@ -179,6 +184,7 @@ class Interface:
             vertical_alignment = ft.MainAxisAlignment.CENTER
             horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
+        # On ajoute la nouvelle vue à la page
         self.page.views.append(ft.View(
             route=view,
             appbar=appbar,
@@ -193,15 +199,15 @@ class Interface:
     def file_selected(self, e, file_picker: ft.Ref[ft.FilePicker]):
         """Fonction appelée lorsqu'un fichier est sélectionné."""
         if e.files is not None:
-            file = file_picker.current.result.files[0].path
-            self.change_view("attente")
-            thread = threading.Thread(target=self.analyze_genome, args=(e, file))
-            thread.start()
+            file = file_picker.current.result.files[0].path  # On récupère le chemin du fichier
+            self.change_view("attente")  # On affiche la vue d'attente
+            thread = threading.Thread(target=self.analyze_genome, args=(e, file))  # On crée un thread pour l'analyse
+            thread.start()  # On démarre le thread
             with self.wait_graph:
-                self.wait_graph.wait()
+                self.wait_graph.wait()  # On attend la fin de la création des graphiques
                 thread.join()
-            if self.page.views[-1].route != "erreur":
-                self.change_view("analyse")
+            if self.page.views[-1].route != "erreur":  # Si aucune erreur n'est survenue
+                self.change_view("analyse")  # On affiche la vue d'analyse
 
     # PARTIE BIOLOGIE
 
@@ -209,57 +215,65 @@ class Interface:
         """Fonction qui analyse le génome pour déterminer l'origine de réplication."""
         if e.files is not None:
             with open(file, 'r') as f:
-                lines = f.read().strip()
-            genome = "".join(lines.splitlines()[1:]).upper()
+                lines = f.read().strip()  # On lit le fichier FASTA en enlevant les espaces et les retours à la ligne
+            genome = "".join(lines.splitlines()[1:]).upper()  # On récupère la séquence d'ADN à partir de la 2ème ligne
             len_window = len(genome) // 175  # on crée 175 fenêtres
             overlap = (len_window // 10) * 9  # on chevauche les fenêtres de 90%
-            non_adn = re.compile(r'[^ATCGU]')
-            cherche_non_nucl = non_adn.search(genome)
-            if cherche_non_nucl:
+            non_dna = re.compile(r'[^ATCGU]')  # on crée une regex pour trouver les caractères non nucléotidiques
+            search_non_nucl = non_dna.search(genome)  # on cherche les caractères non nucléotidiques
+            if search_non_nucl:  # si on trouve des caractères non nucléotidiques
+                # on affiche un message d'erreur
                 self.change_view("erreur", "Le fichier FASTA contient des caractères non nucléotidiques"
-                                           f" (le premier est {genome[cherche_non_nucl.span()[0]]} au nucléotide "
-                                           f"{cherche_non_nucl.span()[0]}).")
-                return
-            elif "U" in genome:
+                                           f" (le premier est {genome[search_non_nucl.span()[0]]} au nucléotide "
+                                           f"{search_non_nucl.span()[0]}).")
+                self.wait_graph.notify()  # on notifie la fin de la création des graphiques
+                return  # on arrête la fonction
+            elif "U" in genome:  # si on trouve des uraciles dans la séquence
                 self.change_view("erreur", "Le fichier FASTA est une séquence d'ARN. Une séquence d'ADN est requise.")
-                return
-            i = 0
-            ratio = []
+                self.wait_graph.notify()  # on notifie la fin de la création des graphiques
+                return  # on arrête la fonction
+
+            i = 0  # on initialise l'indice de la fenêtre
+            ratio = []  # on crée une liste pour stocker les ratios (G-C) / (G+C)
             self.progress_ring.current.value = 0
             self.page.update()
             while True:
-                end_window = min(i + len_window, len(genome))
-                window = genome[i:end_window]
-                nb_g = window.count('G')
-                nb_c = window.count('C')
+                end_window = min(i + len_window, len(genome))  # on détermine la fin de la fenêtre
+                window = genome[i:end_window]  # on récupère la fenêtre
+                nb_g = window.count('G')  # on compte le nombre de G
+                nb_c = window.count('C')   # on compte le nombre de C
                 try:
-                    ratio.append((nb_g - nb_c) / (nb_g + nb_c))
-                except ZeroDivisionError:
+                    ratio.append((nb_g - nb_c) / (nb_g + nb_c))  # on ajoute le ratio (G-C)/(G+C) à la liste
+                except ZeroDivisionError:  # s'il y a une division par zéro
                     self.change_view("erreur", "Division par zéro. Vérifiez que le fichier FASTA contient des G et C. "
                                                "Si c'est le cas, veuillez modifier la taille de la fenêtre ou du "
                                                "chevauchement.")
-                    return
-                if min(i + len_window, len(genome)) == len(genome):
-                    break
-                i += overlap
-                self.progress_ring.current.value = (i / len(genome)) / 2
-                self.page.update()
+                    self.wait_graph.notify()  # on notifie la fin de la création des graphiques
+                    return  # on arrête la fonction
+                if min(i + len_window, len(genome)) == len(genome):  # si on est à la fin de la séquence
+                    break  # on arrête la boucle
+                i += overlap  # on avance la fenêtre
+                self.progress_ring.current.value = (i / len(genome)) / 2  # on met à jour la barre de progression
+                self.page.update()  # on met à jour la page
 
             self.progress_ring.current.value = None
             self.page.update()
-            fig1, ax1 = plt.subplots(figsize=(15, 6))
-            ax1.plot(ratio, linewidth=0.5)
-            invert_point = self.find_inversion_point(ratio)
-            if len(invert_point) > 1:
+            fig1, ax1 = plt.subplots(figsize=(15, 6))  # on crée une figure pour le graphique affichant les ratios en
+            # fonction de la fenêtre
+            ax1.plot(ratio, linewidth=0.5)  # on affiche les ratios
+            invert_point = self.find_inversion_point(ratio)  # on cherche le point d'inversion
+            if len(invert_point) > 1:  # si on trouve plusieurs points d'inversion
+                # on affiche un message d'erreur
                 self.change_view("erreur", "Plusieurs points d'inversion trouvés. Veuillez modifier la taille "
                                            "de la fenêtre ou du chevauchement. Si le problème persiste, "
                                            "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
-            elif len(invert_point) == 0:
+            elif len(invert_point) == 0:  # si on ne trouve pas de point d'inversion
+                # on affiche un message d'erreur
                 self.change_view("erreur", "Aucun point d'inversion trouvé. Veuillez modifier la taille de la fenêtre "
                                            "ou du chevauchement. Si le problème persiste, le point d'inversion ne peut "
                                            "être trouvé par l'algorithme utilisé.", )
 
-            for invert_point in self.find_inversion_point(ratio):
+            for invert_point in self.find_inversion_point(ratio):  # on affiche le point d'inversion
                 self.window_ori = invert_point
                 self.ori_start = overlap * invert_point
                 self.ori_end = overlap * invert_point + len_window
@@ -277,17 +291,17 @@ class Interface:
             ax1.set_ylabel('Ratio (G-C) / (G+C)')
             self.chart1.figure = fig1
 
-            seqlength = len(genome)
-            initw = 0
+            seq_length = len(genome)
+            window = 0
             x_values = [0]  # La position initiale
             y_values = [0]  # La position initiale
 
             self.progress_ring.current.value = 0.5
             self.page.update()
-            while initw <= seqlength:
+            while window <= seq_length:
                 nba = nbc = nbg = nbt = 0
                 nb = 0
-                for i in range(initw, min(initw + len_window, seqlength)):
+                for i in range(window, min(window + len_window, seq_length)):
                     nb += 1
                     base = genome[i]  # Python utilise des indices 0-based
 
@@ -308,8 +322,8 @@ class Interface:
                 x_values.append(x_values[-1] + x_end_segment)
                 y_values.append(y_values[-1] + y_end_segment)
 
-                initw += len_window
-                self.progress_ring.current.value = 0.5 + (initw / seqlength) / 2
+                window += len_window
+                self.progress_ring.current.value = 0.5 + (window / seq_length) / 2
                 self.page.update()
 
             self.progress_ring.current.value = None
@@ -391,7 +405,7 @@ class Interface:
                 else:
                     if not (x_values[j] > x_values[i] and y_values[j] > y_values[i]):
                         count += 1
-            if count == 10:
+            if count >= 8:
                 cusp.append((x_values[i], y_values[i]))
                 try:
                     if x_values[i+100] < x_values[i] and y_values[i+100] < y_values[i]:
