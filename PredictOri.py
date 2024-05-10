@@ -94,6 +94,7 @@ class Interface:
             vertical_alignment = ft.MainAxisAlignment.CENTER
             scroll = ft.ScrollMode.AUTO
             on_scroll_interval = 0
+        # Définition de la page d'aide
         elif view == "aide":
             controls = [
                 ft.Column(
@@ -115,6 +116,7 @@ class Interface:
             appbar = ft.AppBar(leading=ft.IconButton(icon=ft.icons.ARROW_CIRCLE_LEFT,
                                                      on_click=lambda _: self.change_view("accueil"),
                                                      tooltip="Retour à l'accueil"))
+        # Définition de la page d'accueil.
         elif view == "accueil":
             controls = [ft.Column(
                 controls=[
@@ -155,6 +157,7 @@ class Interface:
                 spacing=0.1 * self.page.width), ]
             vertical_alignment = ft.MainAxisAlignment.CENTER
             horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        # Définition de la vue d'erreur
         elif view == "erreur":
             button = ft.FilledButton(
                 text="Voir les résultats malgré tout",
@@ -179,6 +182,7 @@ class Interface:
             vertical_alignment = ft.MainAxisAlignment.CENTER
             horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
+        # Ajout de la vue à la page principale
         self.page.views.append(ft.View(
             route=view,
             appbar=appbar,
