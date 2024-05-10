@@ -321,8 +321,6 @@ class Interface:
                                            "de la fenêtre ou du chevauchement. Si le problème persiste, "
                                            "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
             for cusp in cusps:
-                ax2.annotate('Point de rebroussement', xy=(cusp[0], cusp[1]), xytext=(cusp[0], cusp[1]), color='red',
-                             ha='center', va='top')
                 ax2.scatter(cusp[0], cusp[1], color='red', zorder=5)
             ax2.plot(x_values, y_values, linestyle='-')
             ax2.set_xlabel('Horizontal Direction')
@@ -362,9 +360,10 @@ class Interface:
         return invert_point
 
     @staticmethod
-    def find_cusp( x_values, y_values):
+    def find_cusp(x_values, y_values):
         """Fonction qui trouve le point de rebroussement dans une liste de coordonnées."""
         cusp = []
+        # on se base sur les 100 premiers nucléotides pour déterminer la direction initiale
         if x_values[100] < 0 and y_values[100] < 0:
             direction = "sud-ouest"
         elif x_values[100] < 0 < y_values[100]:
@@ -377,27 +376,30 @@ class Interface:
             count = 0
             for j in range(i + 1, min(i + 11, len(x_values))):
                 if direction == "sud-ouest":
-                    if x_values[i] < x_values[j] and y_values[i] < y_values[j]:
+                    if not (x_values[j] < x_values[i] and y_values[j] < y_values[i]):
                         count += 1
                 elif direction == "nord-ouest":
-                    if x_values[i] < x_values[j] and y_values[i] > y_values[j]:
+                    if not (x_values[j] < x_values[i] and y_values[j] > y_values[i]):
                         count += 1
                 elif direction == "sud-est":
-                    if x_values[i] > x_values[j] and y_values[i] < y_values[j]:
+                    if not (x_values[j] > x_values[i] and y_values[j] < y_values[i]):
                         count += 1
                 else:
-                    if x_values[i] > x_values[j] and y_values[i] > y_values[j]:
+                    if not (x_values[j] > x_values[i] and y_values[j] > y_values[i]):
                         count += 1
             if count == 10:
                 cusp.append((x_values[i], y_values[i]))
-                if direction == "sud-ouest":
-                    direction = "nord-est"
-                elif direction == "nord-est":
-                    direction = "sud-ouest"
-                elif direction == "sud-est":
-                    direction = "nord-ouest"
-                else:
-                    direction = "sud-est"
+                try:
+                    if x_values[i+100] < x_values[i] and y_values[i+100] < y_values[i]:
+                        direction = "sud-ouest"
+                    elif x_values[i+100] < x_values[i] and y_values[i+100] > y_values[i]:
+                        direction = "nord-ouest"
+                    elif x_values[i+100] > x_values[i] and y_values[i+100] < y_values[i]:
+                        direction = "sud-est"
+                    else:
+                        direction = "nord-est"
+                except IndexError:
+                    break
         return cusp
 
 
