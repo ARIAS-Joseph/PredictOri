@@ -60,7 +60,7 @@ class Interface:
                         # On affiche où se trouve l'origine de réplication
                         ft.Text(f"L'origine de réplication se trouve entre les nucléotides "
                                 f"{format(self.ori_start, ',')} "
-                                f"et {format(self.ori_end,',')} dans la fenêtre {self.window_ori}.",
+                                f"et {format(self.ori_end, ',')} dans la fenêtre {self.window_ori}.",
                                 size=20),
                         # On affiche le graphique du chemin de la séquence d'ADN
                         self.chart2,
@@ -394,25 +394,25 @@ class Interface:
             count = 0
             for j in range(i + 1, min(i + 11, len(x_values))):
                 if direction == "sud-ouest":
-                    if not (x_values[j] < x_values[i] and y_values[j] < y_values[i]):
+                    if x_values[j] > x_values[i] and y_values[j] > y_values[i]:
                         count += 1
                 elif direction == "nord-ouest":
-                    if not (x_values[j] < x_values[i] and y_values[j] > y_values[i]):
+                    if x_values[j] > x_values[i] and y_values[j] < y_values[i]:
                         count += 1
                 elif direction == "sud-est":
-                    if not (x_values[j] > x_values[i] and y_values[j] < y_values[i]):
+                    if x_values[j] < x_values[i] and y_values[j] > y_values[i]:
                         count += 1
                 else:
-                    if not (x_values[j] > x_values[i] and y_values[j] > y_values[i]):
+                    if x_values[j] < x_values[i] and y_values[j] < y_values[i]:
                         count += 1
-            if count >= 8:
+            if count == 10:
                 cusp.append((x_values[i], y_values[i]))
                 try:
-                    if x_values[i+100] < x_values[i] and y_values[i+100] < y_values[i]:
+                    if x_values[i+10] < x_values[i] and y_values[i+10] < y_values[i]:
                         direction = "sud-ouest"
-                    elif x_values[i+100] < x_values[i] and y_values[i+100] > y_values[i]:
+                    elif x_values[i+10] < x_values[i] and y_values[i+10] > y_values[i]:
                         direction = "nord-ouest"
-                    elif x_values[i+100] > x_values[i] and y_values[i+100] < y_values[i]:
+                    elif x_values[i+10] > x_values[i] and y_values[i+10] < y_values[i]:
                         direction = "sud-est"
                     else:
                         direction = "nord-est"
