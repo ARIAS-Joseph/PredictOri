@@ -391,12 +391,13 @@ class Interface:
             direction = "sud-est"
         else:
             direction = "nord-est"
-        for i in range(1, len(x_values)):
-            count = 0
-            for j in range(i + 1, min(i + 11, len(x_values))):
-                if direction == "sud-ouest":
-                    if x_values[j] > x_values[i] and y_values[j] > y_values[i]:
-                        count += 1
+        for i in range(1, len(x_values)):  # on parcourt les coordonnées
+            count = 0  # compteur pour les 10 prochaines coordonnées
+            for j in range(i + 1, min(i + 11, len(x_values))):  # on regarde les 10 coordonnées suivantes
+                if direction == "sud-ouest":  # si la direction est sud-ouest
+                    if x_values[j] > x_values[i] and y_values[j] > y_values[i]:  # si les coordonnées suivantes sont
+                        # dans le sens opposé à la direction
+                        count += 1  # on incrémente le compteur
                 elif direction == "nord-ouest":
                     if x_values[j] > x_values[i] and y_values[j] < y_values[i]:
                         count += 1
@@ -406,9 +407,9 @@ class Interface:
                 else:
                     if x_values[j] < x_values[i] and y_values[j] < y_values[i]:
                         count += 1
-            if count == 10:
-                cusp.append((x_values[i], y_values[i]))
-                try:
+            if count == 10:  # si les 10 coordonnées suivantes sont dans le sens opposé à la direction
+                cusp.append((x_values[i], y_values[i]))  # on a trouvé un point de rebroussement
+                try:  # on détermine la nouvelle direction à partir des 10 prochaines coordonnées
                     if x_values[i+10] < x_values[i] and y_values[i+10] < y_values[i]:
                         direction = "sud-ouest"
                     elif x_values[i+10] < x_values[i] and y_values[i+10] > y_values[i]:
@@ -419,7 +420,7 @@ class Interface:
                         direction = "nord-est"
                 except IndexError:
                     break
-        return cusp
+        return cusp  # on retourne la liste des points de rebroussement
 
 
 ft.app(Interface)
