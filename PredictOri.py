@@ -20,20 +20,22 @@ class Interface:
 
     def __init__(self, page):
 
-        self.file_picker = ft.Ref[ft.FilePicker]()
-        self.progress_ring = ft.Ref[ft.ProgressRing]()
+        self.file_picker = ft.Ref[ft.FilePicker]()  # Sélecteur de fichier
+        self.progress_ring = ft.Ref[ft.ProgressRing]()  # Anneau de progression
         self.page = page  # Page principale de l'interface
         self.page.title = "PredictOri"  # Titre de la page
         self.page.window_maximized = True  # Maximise la fenêtre
         self.window_ori = 0
         self.ori_start = 0
         self.ori_end = 0
+        # Ajout du sélecteur de fichier à la page
         self.page.overlay.append(
             ft.FilePicker(on_result=lambda e: self.file_selected(e, self.file_picker), ref=self.file_picker))
-        self.chart1 = MatplotlibChart()
-        self.chart2 = MatplotlibChart()
+        self.chart1 = MatplotlibChart()  # Graphique 1
+        self.chart2 = MatplotlibChart()  # Graphique 2
         self.wait_graph = threading.Condition()
 
+        # Création de la vue d'accueil
         self.change_view("accueil")
 
     def change_view(self, view: str, err_mess: str = None):
@@ -46,6 +48,7 @@ class Interface:
         on_scroll_interval = None
         vertical_alignment = ft.MainAxisAlignment.CENTER
         horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        # Vérification de la vue à afficher
         if view == "analyse":
             scroll = ft.ScrollMode.HIDDEN
             on_scroll_interval = 0
@@ -53,8 +56,9 @@ class Interface:
                 ft.Column(
                     controls=[
                         self.chart1,
-                        ft.Text(f"L'origine de réplication se trouve entre les nucléotides {self.ori_start} "
-                                f"et {self.ori_end} dans la fenêtre {self.window_ori}.",
+                        ft.Text(f"L'origine de réplication se trouve entre les nucléotides "
+                                f"{format(self.ori_start, ',')} "
+                                f"et {format(self.ori_end,',')} dans la fenêtre {self.window_ori}.",
                                 size=20),
                         self.chart2,
                     ],
