@@ -11,7 +11,6 @@ from flet.matplotlib_chart import MatplotlibChart
 import regex as re
 import threading
 
-
 # PARTIE INTERFACE GRAPHIQUE
 
 
@@ -26,9 +25,9 @@ class Interface:
         self.page = page  # Page de l'interface qui contiendra les différentes fenêtres (views)
         self.page.title = "PredictOri"  # Titre de la page
         self.page.window_maximized = True  # Maximise la fenêtre
-        self.window_ori = 0  # Fenêtre contenant le point d'inversion
-        self.ori_start = 0  # Nucléotide du début de la fenêtre contenant l'origine de réplication
-        self.ori_end = 0  # Nucléotide de la fin de la fenêtre contenant de l'origine de réplication
+        self.window_ori = []  # Fenêtre contenant le point d'inversion
+        self.ori_start = []  # Nucléotide du début de la fenêtre contenant l'origine de réplication
+        self.ori_end = [] # Nucléotide de la fin de la fenêtre contenant de l'origine de réplication
         # Ajout du sélecteur de fichier
         self.page.overlay.append(
             ft.FilePicker(on_result=lambda e: self.file_selected(e, self.file_picker), ref=self.file_picker))
@@ -51,6 +50,17 @@ class Interface:
         horizontal_alignment = ft.CrossAxisAlignment.CENTER  # Alignement horizontal
         # Vérification de la vue à afficher
         if view == "analyse":  # Vue d'analyse
+            if len(self.window_ori) == 0:
+                text = "Aucun point d'inversion trouvé."
+            elif len(self.window_ori) == 1:
+                text = (f"L'origine de réplication se trouve entre les nucléotides {format(self.ori_start[0], ',')} et"
+                        f" {format(self.ori_end[0], ',')} dans la fenêtre {self.window_ori[0]}.")
+            else:
+                text = "Plusieurs points d'inversion ont été trouvés :"
+                for i in range(len(self.window_ori)):
+                    text += (f"\n- Entre les nucléotides {format(self.ori_start[i], ',')} "
+                             f"et {format(self.ori_end[i], ',')} dans la fenêtre "
+                             f"{self.window_ori[i]}{';' if i < len(self.window_ori) - 1 else '.'}")
             scroll = ft.ScrollMode.HIDDEN  # On cache la barre de défilement
             on_scroll_interval = 0
             controls = [
@@ -59,9 +69,7 @@ class Interface:
                         # On affiche le graphique du ratio (G-C) / (G+C) en fonction de la fenêtre
                         self.chart1,
                         # On affiche où se trouve l'origine de réplication
-                        ft.Text(f"L'origine de réplication se trouve entre les nucléotides "
-                                f"{format(self.ori_start, ',')} "
-                                f"et {format(self.ori_end, ',')} dans la fenêtre {self.window_ori}.",
+                        ft.Text(text,
                                 size=20),
                         # On affiche le graphique du chemin de la séquence d'ADN
                         self.chart2,
@@ -121,6 +129,10 @@ class Interface:
                                                      on_click=lambda _: self.change_view("accueil"),
                                                      tooltip="Retour à l'accueil"))
         elif view == "accueil":
+            # On réinitialise les listes
+            self.window_ori = []
+            self.ori_start = []
+            self.ori_end = []
             controls = [ft.Column(
                 controls=[
                     ft.Text(
@@ -274,81 +286,84 @@ class Interface:
                                            "ou du chevauchement. Si le problème persiste, le point d'inversion ne peut "
                                            "être trouvé par l'algorithme utilisé.", )
 
-            for invert_point in self.find_inversion_point(ratio):  # on affiche le point d'inversion
-                self.window_ori = invert_point
-                self.ori_start = overlap * invert_point
-                self.ori_end = overlap * invert_point + len_window
-                ax1.axhline(y=0, color='r', label='Fenêtre contenant le point d\'inversion')
-                ax1.scatter(invert_point, 0, color='red', zorder=5)
-                ax1.axvline(invert_point, linestyle='--', color='r', ymax=0.5)
+            for invert_point in self.find_inversion_point(ratio):  # pout chaque point d'inversion trouvé
+                self.window_ori.append(invert_point)  # on ajoute la fenêtre contenant le point d'inversion
+                self.ori_start.append(overlap * invert_point)  # on ajoute le nucléotide du début de la fenêtre
+                self.ori_end.append(overlap * invert_point + len_window)  # on ajoute le nucléotide de la fin de la
+                # fenêtre
+                ax1.axhline(y=0, color='r')  # on affiche une ligne rouge pour mieux visualiser le point d'inversion
+                ax1.scatter(invert_point, 0, color='red', zorder=5)  # on affiche le point d'inversion
+                ax1.axvline(invert_point, linestyle='--', color='r', ymax=0.5)  # on affiche une ligne allant de
+                # l'axe x au point d'inversion
+                # on ajoute une annotation pour indiquer le point d'inversion
                 ax1.annotate(f'Fenêtre du point d\'inversion: {invert_point}', xy=(invert_point, 0),
                              xytext=(invert_point, -0.25),
                              color='red', ha='center', va='top')
 
-            val_max_y = max(abs(min(ratio)), abs(max(ratio)))
-            ax1.set_ylim(-val_max_y, val_max_y)
-            ax1.set_title('Ratio (G-C) / (G+C) en fonction de la fenêtre')
-            ax1.set_xlabel('Window')
-            ax1.set_ylabel('Ratio (G-C) / (G+C)')
+            val_max_y = max(abs(min(ratio)), abs(max(ratio)))  # on détermine la valeur absolue maximale de y
+            ax1.set_ylim(-val_max_y, val_max_y)  # on définit les limites de y
+            ax1.set_title('Ratio (G-C) / (G+C) en fonction de la fenêtre')  # on ajoute un titre
+            ax1.set_xlabel('Window')  # on ajoute un titre à l'axe x
+            ax1.set_ylabel('Ratio (G-C) / (G+C)')  # on ajoute un titre à l'axe y
             self.chart1.figure = fig1
 
-            seq_length = len(genome)
-            window = 0
-            x_values = [0]  # La position initiale
-            y_values = [0]  # La position initiale
+            seq_length = len(genome)  # on récupère la longueur de la séquence
+            window = 0  # on initialise la fenêtre
+            x_values = [0]  # La position initiale sur l'axe x
+            y_values = [0]  # La position initiale sur l'axe y
 
             self.progress_ring.current.value = 0.5
             self.page.update()
-            while window <= seq_length:
-                nba = nbc = nbg = nbt = 0
-                nb = 0
-                for i in range(window, min(window + len_window, seq_length)):
-                    nb += 1
-                    base = genome[i]  # Python utilise des indices 0-based
+            while window <= seq_length:  # tant que la fenêtre est inférieure à la longueur de la séquence
+                nba = nbc = nbg = nbt = 0  # on initialise les compteurs pour les nucléotides
+                nb = 0  # on initialise le compteur pour les nucléotides
+                for i in range(window, min(window + len_window, seq_length)):  # on parcourt la fenêtre
+                    nb += 1  # on incrémente le compteur de nucléotides
+                    base = genome[i]
 
-                    if base == 'A':
+                    if base == 'A':  # si le nucléotide est A
                         nba += 1
-                    elif base == 'C':
+                    elif base == 'C':  # si le nucléotide est C
                         nbc += 1
-                    elif base == 'G':
+                    elif base == 'G':  # si le nucléotide est G
                         nbg += 1
-                    elif base == 'T':
+                    elif base == 'T':  # si le nucléotide est T
                         nbt += 1
 
-                nb_steps_right = nbc - nbg
-                nb_steps_up = nba - nbt
-                x_end_segment = nb_steps_right * nb
-                y_end_segment = nb_steps_up * nb
+                nb_steps_x = nbc - nbg  # on détermine le nombre de pas sur l'axe x
+                nb_steps_y = nba - nbt  # on détermine le nombre de pas sur l'axe y
+                x_end_segment = nb_steps_x * nb  # on détermine la longueur du segment sur l'axe x
+                y_end_segment = nb_steps_y * nb # on détermine la longueur du segment sur l'axe y
 
-                x_values.append(x_values[-1] + x_end_segment)
-                y_values.append(y_values[-1] + y_end_segment)
+                x_values.append(x_values[-1] + x_end_segment)  # on ajoute la nouvelle coordonnée x
+                y_values.append(y_values[-1] + y_end_segment)  # on ajoute la nouvelle coordonnée y
 
-                window += len_window
+                window += len_window  # on avance la fenêtre
                 self.progress_ring.current.value = 0.5 + (window / seq_length) / 2
                 self.page.update()
 
             self.progress_ring.current.value = None
             self.page.update()
-            fig2, ax2 = plt.subplots(figsize=(15, 6))
-            cusps = self.find_cusp(x_values, y_values)
-            if len(cusps) == 0:
+            fig2, ax2 = plt.subplots(figsize=(15, 6))  # on crée une figure pour le graphique du chemin de la séquence
+            cusps = self.find_cusp(x_values, y_values)  # on cherche les points de rebroussement
+            if len(cusps) == 0:  # si on ne trouve pas de point de rebroussement
                 self.change_view("erreur", "Aucun point d'inversion trouvé. Veuillez modifier la taille "
                                            "de la fenêtre ou du chevauchement. Si le problème persiste, "
                                            "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
-            elif len(cusps) > 1:
+            elif len(cusps) > 1:  # si on trouve plusieurs points de rebroussement
                 self.change_view("erreur", "Plusieurs points d'inversions trouvés. Veuillez modifier la taille "
                                            "de la fenêtre ou du chevauchement. Si le problème persiste, "
                                            "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
-            for cusp in cusps:
-                ax2.scatter(cusp[0], cusp[1], color='red', zorder=5)
-            ax2.plot(x_values, y_values, linestyle='-')
-            ax2.set_xlabel('Horizontal Direction')
-            ax2.set_ylabel('Vertical Direction')
-            ax2.set_title('DNA Sequence Graph')
-            ax2.grid()
+            for cusp in cusps:  # pour chaque point de rebroussement
+                ax2.scatter(cusp[0], cusp[1], color='red', zorder=5)  # on affiche le point de rebroussement
+            ax2.plot(x_values, y_values, linestyle='-')  # on affiche le chemin de la séquence
+            ax2.set_xlabel('Horizontal Direction')  # on ajoute un titre à l'axe x
+            ax2.set_ylabel('Vertical Direction')  # on ajoute un titre à l'axe y
+            ax2.set_title('DNA Sequence Graph')  # on ajoute un titre
+            ax2.grid()  # on affiche la grille
             self.chart2.figure = fig2
             with self.wait_graph:
-                self.wait_graph.notify()
+                self.wait_graph.notify()  # on notifie la fin de la création des graphiques
 
     @staticmethod
     def find_inversion_point(ratios):
