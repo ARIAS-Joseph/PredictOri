@@ -36,7 +36,8 @@ class Interface:
         self.chart2 = MatplotlibChart()  # Graphique pour afficher le chemin de la séquence d'ADN
         self.wait_graph = threading.Condition()  # Condition pour attendre la fin de la création des graphiques
 
-        self.change_view("accueil")  # On affiche la vue d'accueil
+        # Création de la vue d'accueil
+        self.change_view("accueil")
 
     def change_view(self, view: str, err_mess: str = None):
         """Fonction qui change la vue de l'interface."""
@@ -184,7 +185,7 @@ class Interface:
             vertical_alignment = ft.MainAxisAlignment.CENTER
             horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
-        # On ajoute la nouvelle vue à la page
+        # Ajout de la vue à la page principale
         self.page.views.append(ft.View(
             route=view,
             appbar=appbar,
