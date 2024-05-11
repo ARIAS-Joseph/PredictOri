@@ -6,10 +6,12 @@ __email__ = "joseph.arias@ens.uvsq.fr"
 __status__ = "Released"
 
 import flet as ft
+import matplotlib.lines
 import matplotlib.pyplot as plt
 from flet.matplotlib_chart import MatplotlibChart
 import regex as re
 import threading
+
 
 # PARTIE INTERFACE GRAPHIQUE
 
@@ -27,7 +29,7 @@ class Interface:
         self.page.window_maximized = True  # Maximise la fenêtre
         self.window_ori = []  # Fenêtre contenant le point d'inversion
         self.ori_start = []  # Nucléotide du début de la fenêtre contenant l'origine de réplication
-        self.ori_end = [] # Nucléotide de la fin de la fenêtre contenant de l'origine de réplication
+        self.ori_end = []  # Nucléotide de la fin de la fenêtre contenant de l'origine de réplication
         # Ajout du sélecteur de fichier
         self.page.overlay.append(
             ft.FilePicker(on_result=lambda e: self.file_selected(e, self.file_picker), ref=self.file_picker))
@@ -239,11 +241,13 @@ class Interface:
                 self.change_view("erreur", "Le fichier FASTA contient des caractères non nucléotidiques"
                                            f" (le premier est {genome[search_non_nucl.span()[0]]} au nucléotide "
                                            f"{search_non_nucl.span()[0]}).")
-                self.wait_graph.notify()  # on notifie la fin de la création des graphiques
+                with self.wait_graph:
+                    self.wait_graph.notify()  # on notifie la fin de la création des graphiques
                 return  # on arrête la fonction
             elif "U" in genome:  # si on trouve des uraciles dans la séquence
                 self.change_view("erreur", "Le fichier FASTA est une séquence d'ARN. Une séquence d'ADN est requise.")
-                self.wait_graph.notify()  # on notifie la fin de la création des graphiques
+                with self.wait_graph:
+                    self.wait_graph.notify()  # on notifie la fin de la création des graphiques
                 return  # on arrête la fonction
 
             i = 0  # on initialise l'indice de la fenêtre
@@ -254,7 +258,7 @@ class Interface:
                 end_window = min(i + len_window, len(genome))  # on détermine la fin de la fenêtre
                 window = genome[i:end_window]  # on récupère la fenêtre
                 nb_g = window.count('G')  # on compte le nombre de G
-                nb_c = window.count('C')   # on compte le nombre de C
+                nb_c = window.count('C')  # on compte le nombre de C
                 try:
                     ratio.append((nb_g - nb_c) / (nb_g + nb_c))  # on ajoute le ratio (G-C)/(G+C) à la liste
                 except ZeroDivisionError:  # s'il y a une division par zéro
@@ -333,7 +337,7 @@ class Interface:
                 nb_steps_x = nbc - nbg  # on détermine le nombre de pas sur l'axe x
                 nb_steps_y = nba - nbt  # on détermine le nombre de pas sur l'axe y
                 x_end_segment = nb_steps_x * nb  # on détermine la longueur du segment sur l'axe x
-                y_end_segment = nb_steps_y * nb # on détermine la longueur du segment sur l'axe y
+                y_end_segment = nb_steps_y * nb  # on détermine la longueur du segment sur l'axe y
 
                 x_values.append(x_values[-1] + x_end_segment)  # on ajoute la nouvelle coordonnée x
                 y_values.append(y_values[-1] + y_end_segment)  # on ajoute la nouvelle coordonnée y
@@ -355,7 +359,14 @@ class Interface:
                                            "de la fenêtre ou du chevauchement. Si le problème persiste, "
                                            "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
             for cusp in cusps:  # pour chaque point de rebroussement
-                ax2.scatter(cusp[0], cusp[1], color='red', zorder=5)  # on affiche le point de rebroussement
+                ax2.scatter(cusp[0], cusp[1], color='red', zorder=5, label="point de rebroussement")  # on affiche le
+                # point de rebroussement
+            custom_legend = [
+                matplotlib.lines.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10,
+                                        label='Point de rebroussement')]
+
+            # Ajouter la légende personnalisée
+            plt.legend(handles=custom_legend)
             ax2.plot(x_values, y_values, linestyle='-')  # on affiche le chemin de la séquence
             ax2.set_xlabel('Horizontal Direction')  # on ajoute un titre à l'axe x
             ax2.set_ylabel('Vertical Direction')  # on ajoute un titre à l'axe y
@@ -425,11 +436,11 @@ class Interface:
             if count == 10:  # si les 10 coordonnées suivantes sont dans le sens opposé à la direction
                 cusp.append((x_values[i], y_values[i]))  # on a trouvé un point de rebroussement
                 try:  # on détermine la nouvelle direction à partir des 10 prochaines coordonnées
-                    if x_values[i+10] < x_values[i] and y_values[i+10] < y_values[i]:
+                    if x_values[i + 10] < x_values[i] and y_values[i + 10] < y_values[i]:
                         direction = "sud-ouest"
-                    elif x_values[i+10] < x_values[i] and y_values[i+10] > y_values[i]:
+                    elif x_values[i + 10] < x_values[i] and y_values[i + 10] > y_values[i]:
                         direction = "nord-ouest"
-                    elif x_values[i+10] > x_values[i] and y_values[i+10] < y_values[i]:
+                    elif x_values[i + 10] > x_values[i] and y_values[i + 10] < y_values[i]:
                         direction = "sud-est"
                     else:
                         direction = "nord-est"
