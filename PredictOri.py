@@ -265,7 +265,8 @@ class Interface:
                     self.change_view("erreur", "Division par zéro. Vérifiez que le fichier FASTA contient des G et C. "
                                                "Si c'est le cas, veuillez modifier la taille de la fenêtre ou du "
                                                "chevauchement.")
-                    self.wait_graph.notify()  # on notifie la fin de la création des graphiques
+                    with self.wait_graph:
+                        self.wait_graph.notify()  # on notifie la fin de la création des graphiques
                     return  # on arrête la fonction
                 if min(i + len_window, len(genome)) == len(genome):  # si on est à la fin de la séquence
                     break  # on arrête la boucle
@@ -278,17 +279,7 @@ class Interface:
             fig1, ax1 = plt.subplots(figsize=(15, 6))  # on crée une figure pour le graphique affichant les ratios en
             # fonction de la fenêtre
             ax1.plot(ratio, linewidth=0.5)  # on affiche les ratios
-            invert_point = self.find_inversion_point(ratio)  # on cherche le point d'inversion
-            if len(invert_point) > 1:  # si on trouve plusieurs points d'inversion
-                # on affiche un message d'erreur
-                self.change_view("erreur", "Plusieurs points d'inversion trouvés. Veuillez modifier la taille "
-                                           "de la fenêtre ou du chevauchement. Si le problème persiste, "
-                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
-            elif len(invert_point) == 0:  # si on ne trouve pas de point d'inversion
-                # on affiche un message d'erreur
-                self.change_view("erreur", "Aucun point d'inversion trouvé. Veuillez modifier la taille de la fenêtre "
-                                           "ou du chevauchement. Si le problème persiste, le point d'inversion ne peut "
-                                           "être trouvé par l'algorithme utilisé.", )
+            list_invert_point = self.find_inversion_point(ratio)  # on cherche le point d'inversion
 
             for invert_point in self.find_inversion_point(ratio):  # pout chaque point d'inversion trouvé
                 self.window_ori.append(invert_point)  # on ajoute la fenêtre contenant le point d'inversion
@@ -350,14 +341,7 @@ class Interface:
             self.page.update()
             fig2, ax2 = plt.subplots(figsize=(15, 6))  # on crée une figure pour le graphique du chemin de la séquence
             cusps = self.find_cusp(x_values, y_values)  # on cherche les points de rebroussement
-            if len(cusps) == 0:  # si on ne trouve pas de point de rebroussement
-                self.change_view("erreur", "Aucun point d'inversion trouvé. Veuillez modifier la taille "
-                                           "de la fenêtre ou du chevauchement. Si le problème persiste, "
-                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
-            elif len(cusps) > 1:  # si on trouve plusieurs points de rebroussement
-                self.change_view("erreur", "Plusieurs points d'inversions trouvés. Veuillez modifier la taille "
-                                           "de la fenêtre ou du chevauchement. Si le problème persiste, "
-                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
+
             for cusp in cusps:  # pour chaque point de rebroussement
                 ax2.scatter(cusp[0], cusp[1], color='red', zorder=5, label="point de rebroussement")  # on affiche le
                 # point de rebroussement
@@ -373,6 +357,25 @@ class Interface:
             ax2.set_title('DNA Sequence Graph')  # on ajoute un titre
             ax2.grid()  # on affiche la grille
             self.chart2.figure = fig2
+
+            if len(list_invert_point) > 1:  # si on trouve plusieurs points d'inversion
+                # on affiche un message d'erreur
+                self.change_view("erreur", "Plusieurs points d'inversion trouvés. Veuillez modifier la taille "
+                                           "de la fenêtre ou du chevauchement. Si le problème persiste, "
+                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
+            elif len(list_invert_point) == 0:  # si on ne trouve pas de point d'inversion
+                # on affiche un message d'erreur
+                self.change_view("erreur", "Aucun point d'inversion trouvé. Veuillez modifier la taille de la fenêtre "
+                                           "ou du chevauchement. Si le problème persiste, le point d'inversion ne peut "
+                                           "être trouvé par l'algorithme utilisé.", )
+            elif len(cusps) == 0:  # si on ne trouve pas de point de rebroussement
+                self.change_view("erreur", "Aucun point d'inversion trouvé. Veuillez modifier la taille "
+                                           "de la fenêtre ou du chevauchement. Si le problème persiste, "
+                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
+            elif len(cusps) > 1:  # si on trouve plusieurs points de rebroussement
+                self.change_view("erreur", "Plusieurs points d'inversions trouvés. Veuillez modifier la taille "
+                                           "de la fenêtre ou du chevauchement. Si le problème persiste, "
+                                           "le point d'inversion ne peut être trouvé par l'algorithme utilisé.")
             with self.wait_graph:
                 self.wait_graph.notify()  # on notifie la fin de la création des graphiques
 
